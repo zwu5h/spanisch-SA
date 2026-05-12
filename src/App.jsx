@@ -127,6 +127,89 @@ const grammarTopics = [
   },
 ];
 
+const grammarDetails = {
+  perfecto: {
+    signalGroups: [
+      ["Heute / Zeitraum offen", "hoy, esta semana, este mes, este año"],
+      ["Erfahrung / Ergebnis", "ya, todavía no, nunca, alguna vez, últimamente"],
+    ],
+    exceptions: [
+      "Unregelmäßige Partizipien: hecho, dicho, visto, escrito, abierto, puesto, vuelto, roto.",
+      "Mit reflexiven Verben steht das Pronomen vor haber: me he levantado.",
+      "Bei ya / todavía no geht es oft um ein Ergebnis, das jetzt noch wichtig ist.",
+    ],
+  },
+  indefinido: {
+    signalGroups: [
+      ["Abgeschlossener Zeitpunkt", "ayer, anteayer, anoche, el lunes, en 2020"],
+      ["Abgeschlossener Zeitraum", "la semana pasada, el verano pasado, hace dos días"],
+    ],
+    exceptions: [
+      "ser und ir haben dieselben Formen: fui, fuiste, fue, fuimos, fuisteis, fueron.",
+      "Wichtige Verben haben eigene Stämme: tener -> tuv-, estar -> estuv-, hacer -> hic-/hiz-, decir -> dij-.",
+      "Bei -car, -gar, -zar ändert sich die yo-Form: buscar -> busqué, llegar -> llegué, empezar -> empecé.",
+    ],
+  },
+  imperfecto: {
+    signalGroups: [
+      ["Gewohnheit früher", "antes, siempre, a menudo, normalmente, cada verano"],
+      ["Hintergrund / Beschreibung", "mientras, cuando era pequeño/a, de niño/a"],
+    ],
+    exceptions: [
+      "Nur drei unregelmäßige Verben: ser -> era, ir -> iba, ver -> veía.",
+      "Für eine einmalige, abgeschlossene Handlung nimmst du normalerweise indefinido.",
+      "mientras steht sehr oft mit imperfecto, wenn Handlungen im Hintergrund laufen.",
+    ],
+  },
+  imperativo: {
+    signalGroups: [
+      ["Aufforderung", "por favor, ahora, venga, vamos"],
+      ["Pronomen angehängt", "dime, dámelo, tráemelo, levántate"],
+    ],
+    exceptions: [
+      "Die wichtigsten unregelmäßigen tú-Formen: di, haz, ve, pon, sal, sé, ten, ven.",
+      "Pronomen werden beim bejahten Imperativ angehängt: da + me + lo -> dámelo.",
+      "Wenn die Betonung gleich bleiben muss, braucht das Verb oft einen Akzent.",
+    ],
+  },
+  preps: {
+    signalGroups: [
+      ["Ort / hinein", "vivir en, estar en, entrar en"],
+      ["Thema / kümmern", "hablar de, ocuparse de, quejarse de"],
+      ["Richtung / Teilnahme", "ir a, llegar a, asistir a, unirse a"],
+    ],
+    exceptions: [
+      "Prepositionen lassen sich nicht immer eins zu eins aus dem Deutschen übersetzen.",
+      "jugar a steht bei Sportarten und Spielen: jugar al fútbol.",
+      "Bei a + el entsteht al; bei de + el entsteht del.",
+    ],
+  },
+  relativos: {
+    signalGroups: [
+      ["Sache / Person allgemein", "que"],
+      ["Person nach Komma oder Präposition", "quien, quienes"],
+      ["Ort / Aussage", "donde, lo que"],
+    ],
+    exceptions: [
+      "que ist der Standard für Personen und Sachen: La chica que canta...",
+      "quien/quienes benutzt du nur für Personen.",
+      "lo que bedeutet 'das, was' und bezieht sich auf eine ganze Aussage oder Idee.",
+    ],
+  },
+  desde: {
+    signalGroups: [
+      ["Seit Zeitpunkt", "desde 1998, desde el lunes"],
+      ["Seit Zeitraum", "desde hace tres años, desde hace una semana"],
+      ["Vor Zeitraum", "hace dos días, hace una hora"],
+    ],
+    exceptions: [
+      "desde + Zeitpunkt: Vivo aquí desde 2020.",
+      "desde hace + Zeitraum: Vivo aquí desde hace cuatro años.",
+      "hace + Zeitraum bedeutet meistens 'vor': Llegué hace una hora.",
+    ],
+  },
+};
+
 const vocabUnits = [
   {
     id: "u1",
@@ -256,13 +339,17 @@ const writingPrompts = [
   },
 ];
 
-const normalize = (value) =>
+const normalizeStrict = (value) =>
   value
     .trim()
     .toLowerCase()
+    .replace(/[!?.\u00a1\u00bf]/g, "")
+    .replace(/\s+/g, " ");
+
+const normalize = (value) =>
+  normalizeStrict(value)
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[¡!¿?.]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 
 function App() {
   const [active, setActive] = useState("home");
@@ -319,7 +406,8 @@ function App() {
     const drill = drills[quizIndex % drills.length];
     const value = answer ?? quizAnswer;
     const ok = normalize(value) === normalize(drill.answer);
-    setFeedback(ok ? "correct" : "wrong");
+    const exact = normalizeStrict(value) === normalizeStrict(drill.answer);
+    setFeedback({ status: ok ? "correct" : "wrong", missingMark: ok && !exact });
     setProgress((old) => ({ ...old, attempts: old.attempts + 1, correct: old.correct + (ok ? 1 : 0) }));
   }
 
@@ -425,7 +513,9 @@ function App() {
               <p>Regeln, Signalwörter, Beispiele und typische Formen.</p>
             </div>
             <div className="grammar-grid">
-              {grammarTopics.map((topic) => (
+              {grammarTopics.map((topic) => {
+                const details = grammarDetails[topic.id];
+                return (
                 <article className="grammar-card" key={topic.id}>
                   <div className="card-head">
                     <h3>{topic.title}</h3>
@@ -438,6 +528,24 @@ function App() {
                       <span key={signal}>{signal}</span>
                     ))}
                   </div>
+                  {details?.signalGroups && (
+                    <div className="signal-box">
+                      <h4>Signalwörter</h4>
+                      {details.signalGroups.map(([label, text]) => (
+                        <p key={label}><strong>{label}:</strong> {text}</p>
+                      ))}
+                    </div>
+                  )}
+                  {details?.exceptions && (
+                    <div className="exception-box">
+                      <h4>Ausnahmen & Stolperstellen</h4>
+                      <ul>
+                        {details.exceptions.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <ul>
                     {topic.examples.map((example) => (
                       <li key={example}>{example}</li>
@@ -455,7 +563,8 @@ function App() {
                     </tbody>
                   </table>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -533,8 +642,12 @@ function App() {
                 </form>
               )}
               {feedback && (
-                <div className={`feedback ${feedback}`}>
-                  {feedback === "correct" ? "Richtig." : `Noch nicht. Lösung: ${drill.answer}`}
+                <div className={`feedback ${feedback.status}`}>
+                  {feedback.status === "correct"
+                    ? feedback.missingMark
+                      ? `Gilt. Eigentlich gehört der Akzent oder das spanische Zeichen hinein: ${drill.answer}`
+                      : "Richtig."
+                    : `Noch nicht. Lösung: ${drill.answer}`}
                   {drill.hint && <small>Tipp: {drill.hint}</small>}
                 </div>
               )}
