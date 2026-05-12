@@ -9,6 +9,12 @@
   --surface: #fffdf8;
   --surface-2: #f1eee6;
   --surface-3: #e7f0eb;
+  --panel: rgba(255, 253, 248, 0.92);
+  --panel-soft: rgba(255, 253, 248, 0.74);
+  --nav-active: #eaf4ef;
+  --nav-active-text: #2f7f72;
+  --brand-bg: #eaf4ef;
+  --brand-text: #2f7f72;
   --line: #ded8cb;
   --muted: #69777b;
   --text: #263239;
@@ -16,9 +22,66 @@
   --accent-strong: #bf533f;
   --accent-2: #4f9a8b;
   --accent-3: #f1c66b;
+  --chip-bg: #fff0dc;
+  --chip-text: #94601e;
+  --signal-bg: #eef7f4;
+  --exception-bg: #fff5e4;
+  --note-text: #4c5b60;
+  --hero-overlay-start: rgba(38, 50, 57, 0.78);
+  --hero-overlay-end: rgba(38, 50, 57, 0.28);
+  --card-shadow: rgba(62, 55, 44, 0.08);
+  --primary-shadow: rgba(221, 107, 85, 0.18);
+  --flashcard-bg: linear-gradient(145deg, #fff7e9, #eef7f4);
+  --flashcard-flipped-bg: linear-gradient(145deg, #eef7f4, #fffdf8);
+  --input-placeholder: #8a9697;
+  --success-bg: #e7f6ec;
+  --success-text: #267447;
+  --error-bg: #fff0ee;
+  --error-text: #b84b4b;
   --good: #3f9d68;
   --bad: #d85f5f;
   --radius: 20px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #edf3f0;
+  background: #101714;
+  --bg: #101714;
+  --surface: #17211d;
+  --surface-2: #1d2924;
+  --surface-3: #263830;
+  --panel: rgba(23, 33, 29, 0.94);
+  --panel-soft: rgba(23, 33, 29, 0.76);
+  --nav-active: #243b33;
+  --nav-active-text: #9ad8c7;
+  --brand-bg: #223b33;
+  --brand-text: #9ad8c7;
+  --line: #314039;
+  --muted: #a2b3ad;
+  --text: #edf3f0;
+  --accent: #e47b67;
+  --accent-strong: #ff9a86;
+  --accent-2: #82c9b8;
+  --accent-3: #e4bd67;
+  --chip-bg: #3d3323;
+  --chip-text: #f4d799;
+  --signal-bg: #1f352e;
+  --exception-bg: #3a3021;
+  --note-text: #c4d2cc;
+  --hero-overlay-start: rgba(16, 23, 20, 0.84);
+  --hero-overlay-end: rgba(16, 23, 20, 0.42);
+  --card-shadow: rgba(0, 0, 0, 0.28);
+  --primary-shadow: rgba(228, 123, 103, 0.22);
+  --flashcard-bg: linear-gradient(145deg, #332b20, #1f352e);
+  --flashcard-flipped-bg: linear-gradient(145deg, #1f352e, #17211d);
+  --input-placeholder: #7f918b;
+  --success-bg: #1f3729;
+  --success-text: #a5edbf;
+  --error-bg: #3b2424;
+  --error-text: #ffb6b6;
+  --good: #83d6a1;
+  --bad: #ff8f8f;
 }
 
 * {
@@ -63,7 +126,7 @@ button:hover {
 .primary {
   background: var(--accent);
   color: #ffffff;
-  box-shadow: 0 10px 22px rgba(221, 107, 85, 0.18);
+  box-shadow: 0 10px 22px var(--primary-shadow);
 }
 
 .primary:hover {
@@ -77,7 +140,7 @@ button:hover {
 }
 
 .sidebar {
-  background: rgba(255, 253, 248, 0.86);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
   color: var(--text);
   padding: 1rem;
   position: sticky;
@@ -98,8 +161,8 @@ button:hover {
   width: 46px;
   height: 46px;
   border-radius: 17px;
-  background: #eaf4ef;
-  color: #2f7f72;
+  background: var(--brand-bg);
+  color: var(--brand-text);
   display: grid;
   place-items: center;
   font-weight: 850;
@@ -130,8 +193,8 @@ nav button {
 
 nav button.active,
 nav button:hover {
-  background: #eaf4ef;
-  color: #2f7f72;
+  background: var(--nav-active);
+  color: var(--nav-active-text);
 }
 
 main {
@@ -147,6 +210,16 @@ main {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.1rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.theme-toggle {
+  min-width: 118px;
 }
 
 h1,
@@ -188,10 +261,10 @@ h3 {
 .writing-card,
 .exam-grid article,
 .quick-reference {
-  background: rgba(255, 253, 248, 0.92);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 16px 36px rgba(62, 55, 44, 0.08);
+  box-shadow: 0 16px 36px var(--card-shadow);
 }
 
 .score-card {
@@ -211,7 +284,7 @@ section {
 .hero-panel {
   min-height: 245px;
   background:
-    linear-gradient(90deg, rgba(38, 50, 57, 0.78), rgba(38, 50, 57, 0.28)),
+    linear-gradient(90deg, var(--hero-overlay-start), var(--hero-overlay-end)),
     url("https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&w=1600&q=80") center/cover;
   color: #ffffff;
   border-radius: 26px;
@@ -269,7 +342,7 @@ form {
 }
 
 .checklist label {
-  background: rgba(255, 253, 248, 0.74);
+  background: var(--panel-soft);
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 0.82rem 0.9rem;
@@ -311,8 +384,8 @@ form {
 
 .card-head span,
 .exam-grid span {
-  background: #eaf4ef;
-  color: #2f7f72;
+  background: var(--brand-bg);
+  color: var(--brand-text);
   border-radius: 999px;
   padding: 0.28rem 0.62rem;
   font-size: 0.82rem;
@@ -328,8 +401,8 @@ form {
 }
 
 .chips span {
-  background: #fff0dc;
-  color: #94601e;
+  background: var(--chip-bg);
+  color: var(--chip-text);
   border-radius: 999px;
   padding: 0.32rem 0.58rem;
   font-size: 0.84rem;
@@ -342,11 +415,11 @@ form {
 }
 
 .signal-box {
-  background: #eef7f4;
+  background: var(--signal-bg);
 }
 
 .exception-box {
-  background: #fff5e4;
+  background: var(--exception-bg);
 }
 
 .signal-box h4,
@@ -357,7 +430,7 @@ form {
 
 .signal-box p,
 .exception-box li {
-  color: #4c5b60;
+  color: var(--note-text);
 }
 
 .signal-box p {
@@ -416,7 +489,7 @@ input[type="checkbox"] {
 
 input::placeholder,
 textarea::placeholder {
-  color: #8a9697;
+  color: var(--input-placeholder);
 }
 
 .searchbox input {
@@ -436,13 +509,13 @@ textarea::placeholder {
   min-height: 245px;
   border-radius: 26px;
   padding: 1.15rem;
-  background: linear-gradient(145deg, #fff7e9, #eef7f4);
+  background: var(--flashcard-bg);
   border: 1px solid var(--line);
   display: grid;
   place-items: center;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 16px 36px rgba(62, 55, 44, 0.08);
+  box-shadow: 0 16px 36px var(--card-shadow);
 }
 
 .flashcard strong {
@@ -451,7 +524,7 @@ textarea::placeholder {
 }
 
 .flashcard.flipped {
-  background: linear-gradient(145deg, #eef7f4, #fffdf8);
+  background: var(--flashcard-flipped-bg);
 }
 
 .trainer-actions {
@@ -469,7 +542,7 @@ textarea::placeholder {
 }
 
 .word-list div {
-  background: rgba(255, 253, 248, 0.76);
+  background: var(--panel-soft);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 0.68rem 0.72rem;
@@ -507,13 +580,13 @@ textarea::placeholder {
 }
 
 .feedback.correct {
-  background: #e7f6ec;
-  color: #267447;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .feedback.wrong {
-  background: #fff0ee;
-  color: #b84b4b;
+  background: var(--error-bg);
+  color: var(--error-text);
 }
 
 textarea {

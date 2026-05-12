@@ -10,7 +10,9 @@ import {
   RotateCcw,
   Search,
   Shuffle,
+  Moon,
   Sparkles,
+  Sun,
   Trophy,
 } from "lucide-react";
 
@@ -353,6 +355,7 @@ const normalize = (value) =>
 
 function App() {
   const [active, setActive] = useState("home");
+  const [theme, setTheme] = useState(() => localStorage.getItem("spanisch-theme") || "light");
   const [unitId, setUnitId] = useState("all");
   const [query, setQuery] = useState("");
   const [cardIndex, setCardIndex] = useState(0);
@@ -368,6 +371,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem("spanisch-progress", JSON.stringify(progress));
   }, [progress]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("spanisch-theme", theme);
+  }, [theme]);
 
   const allWords = useMemo(
     () => vocabUnits.flatMap((unit) => unit.words.map(([es, de]) => ({ es, de, unit: unit.title, unitId: unit.id }))),
@@ -452,11 +460,23 @@ function App() {
             <p className="eyebrow">Lernübersicht aus deinem Notion-Stoff</p>
             <h1>Spanisch Schularbeit</h1>
           </div>
-          <div className="score-card">
-            <CheckCircle2 size={20} />
-            <div>
-              <strong>{score}%</strong>
-              <small>{progress.correct}/{progress.attempts} richtig</small>
+          <div className="topbar-actions">
+            <button
+              className="theme-toggle"
+              onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+              type="button"
+              aria-label={theme === "dark" ? "Helles Design aktivieren" : "Dunkles Design aktivieren"}
+              title={theme === "dark" ? "Hell" : "Dunkel"}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              <span>{theme === "dark" ? "Hell" : "Dunkel"}</span>
+            </button>
+            <div className="score-card">
+              <CheckCircle2 size={20} />
+              <div>
+                <strong>{score}%</strong>
+                <small>{progress.correct}/{progress.attempts} richtig</small>
+              </div>
             </div>
           </div>
         </header>
