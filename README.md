@@ -20,3 +20,6 @@ Das Projekt ist ein Vite-React-Projekt. In Vercel reicht normalerweise:
 - Output Directory: `dist`
 
 Diese Werte sind auch in `vercel.json` hinterlegt.
+
+
+https://spanisch-sa.vercel.app/
