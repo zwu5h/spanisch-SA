@@ -742,6 +742,7 @@ function App() {
             </div>
             <div className="grammar-list">
               {grammarTopics.map((topic) => {
+                const details = grammarDetails[topic.id];
                 return (
                 <article className="grammar-row" key={topic.id}>
                   <div className="card-head">
@@ -770,6 +771,10 @@ function App() {
                     </table>
                   </div>
                   <div className="grammar-notes">
+                    <p><strong>Signalwörter:</strong> {topic.signals.join(", ")}</p>
+                    {details?.exceptions?.length > 0 && (
+                      <p><strong>Ausnahmen:</strong> {details.exceptions.join(" ")}</p>
+                    )}
                     <p><strong>Beispiel:</strong> {topic.examples[0]}</p>
                   </div>
                 </article>
