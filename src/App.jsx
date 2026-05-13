@@ -513,13 +513,18 @@ function App() {
     setMissedKeys((old) => [...new Set([...old, key])]);
     setLearnQueue((old) => (old.length > 1 ? [...old.slice(1), old[0]] : old));
     setLearnAnswer("");
-    setLearnFeedback({
-      status,
-      text:
-        status === "skipped"
-          ? `Übersprungen. Die richtige Antwort wäre: ${learnWord.es}`
-          : `Noch nicht. Richtig wäre: ${learnWord.es}. Die Vokabel kommt am Schluss nochmal.`,
-    });
+    setLearnFeedback({ status, text: `${learnWord.de} kommt am Schluss nochmal.` });
+  }
+
+  function completeLearnWord(word) {
+    if (!word) return;
+
+    const key = wordKey(word);
+    setLearnQueue((old) => (old[0] === key ? old.slice(1) : old));
+    setLearnAnswer("");
+    setLearnFeedback(null);
+    setMissedKeys((old) => old.filter((item) => item !== key));
+    setProgress((old) => ({ ...old, learned: [...new Set([...old.learned, key])] }));
   }
 
   function submitLearnAnswer(event) {
@@ -527,18 +532,22 @@ function App() {
     if (!learnWord) return;
 
     const isCorrect = normalize(learnAnswer) === normalize(learnWord.es);
-    const key = wordKey(learnWord);
 
     if (isCorrect) {
-      setLearnQueue((old) => old.slice(1));
-      setLearnAnswer("");
-      setLearnFeedback({ status: "correct", text: `Richtig: ${learnWord.es}` });
-      setProgress((old) => ({ ...old, learned: [...new Set([...old.learned, key])] }));
+      completeLearnWord(learnWord);
       return;
     }
 
     moveCurrentToEnd("wrong");
   }
+
+  useEffect(() => {
+    if (!learnWord || normalize(learnAnswer) !== normalize(learnWord.es)) return undefined;
+
+    const word = learnWord;
+    const timer = window.setTimeout(() => completeLearnWord(word), 260);
+    return () => window.clearTimeout(timer);
+  }, [learnAnswer, learnWord]);
 
   function submitQuiz(answer) {
     const drill = drills[quizIndex % drills.length];
