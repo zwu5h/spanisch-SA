@@ -256,7 +256,9 @@ h3 {
 
 .score-card,
 .metric,
+.formation-panel,
 .grammar-card,
+.learn-mode,
 .quiz-card,
 .writing-card,
 .exam-grid article,
@@ -359,6 +361,8 @@ form {
 }
 
 .grammar-card,
+.formation-panel,
+.learn-mode,
 .quiz-card,
 .writing-card,
 .exam-grid article,
@@ -369,6 +373,12 @@ form {
 .grammar-card {
   display: grid;
   gap: 0.75rem;
+}
+
+.formation-panel {
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
 }
 
 .card-head {
@@ -446,16 +456,49 @@ form {
   margin-top: 0.25rem;
 }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.1rem;
 }
 
+th,
 td {
   border-top: 1px solid var(--line);
-  padding: 0.5rem 0.35rem;
+  padding: 0.68rem 0.75rem;
   vertical-align: top;
+  text-align: left;
+  line-height: 1.35;
+}
+
+th {
+  background: var(--surface-2);
+  color: var(--text);
+  border-top: 0;
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.formation-table td,
+.formation-table th {
+  min-width: 180px;
+}
+
+.mini-table {
+  margin: 0;
+}
+
+.mini-table td:first-child {
+  width: 36%;
+  font-weight: 850;
+  color: var(--text);
 }
 
 .searchbox {
@@ -531,6 +574,72 @@ textarea::placeholder {
   grid-column: 1;
 }
 
+.learn-mode {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.learn-mode .card-head {
+  align-items: center;
+}
+
+.learn-mode .card-head p {
+  color: var(--muted);
+  margin: 0.28rem 0 0;
+}
+
+.learn-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.learn-stats span {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 850;
+  padding: 0.35rem 0.65rem;
+}
+
+.learn-prompt,
+.learn-complete {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--flashcard-bg);
+  padding: 1rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.learn-prompt strong,
+.learn-complete strong {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.learn-prompt small,
+.learn-prompt span,
+.learn-complete span {
+  color: var(--muted);
+}
+
+.learn-form {
+  align-items: stretch;
+  gap: 0.7rem;
+}
+
+.learn-form input {
+  flex: 1 1 260px;
+}
+
+.learn-form button {
+  flex: 0 0 auto;
+}
+
 .word-list {
   grid-row: span 2;
   display: grid;
@@ -592,6 +701,56 @@ textarea::placeholder {
 textarea {
   min-height: 210px;
   resize: vertical;
+}
+
+.writing-card {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.writing-card h3,
+.writing-card p {
+  margin-bottom: 0;
+}
+
+.writing-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.65rem;
+}
+
+.ai-review {
+  white-space: pre-wrap;
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.ai-review.success {
+  background: var(--signal-bg);
+  color: var(--note-text);
+}
+
+.ai-review.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.76;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .exam-grid article p,

@@ -11,6 +11,11 @@ npm run dev
 
 Die Seite laeuft dann lokal auf `http://localhost:5173`.
 
+## Groq-Korrektur
+
+Die Schreibuebungen nutzen den Serverless-Endpunkt `api/correct-writing.js` mit Groq `llama-3.3-70b-versatile`.
+Setze dafuer die Environment Variable `GROQ_API_KEY`, lokal z. B. in Vercel CLI oder in den Vercel Project Settings.
+
 ## Vercel
 
 Das Projekt ist ein Vite-React-Projekt. In Vercel reicht normalerweise:

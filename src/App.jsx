@@ -6,10 +6,12 @@ import {
   GraduationCap,
   Home,
   ListChecks,
+  LoaderCircle,
   PencilLine,
   RotateCcw,
   Search,
   Shuffle,
+  SkipForward,
   Moon,
   Sparkles,
   Sun,
@@ -212,6 +214,33 @@ const grammarDetails = {
   },
 };
 
+const formationOverview = [
+  {
+    form: "Pretérito perfecto",
+    build: "haber im presente + participio",
+    endings: "he, has, ha, hemos, habéis, han + -ado / -ido",
+    example: "Hoy he hablado con Ana.",
+  },
+  {
+    form: "Pretérito indefinido",
+    build: "Stamm + indefinido-Endung",
+    endings: "-ar: -é, -aste, -ó, -amos, -asteis, -aron / -er-ir: -í, -iste, -ió, -imos, -isteis, -ieron",
+    example: "Ayer viajé a Madrid.",
+  },
+  {
+    form: "Pretérito imperfecto",
+    build: "Stamm + imperfecto-Endung",
+    endings: "-ar: -aba, -abas, -aba, -ábamos, -abais, -aban / -er-ir: -ía, -ías, -ía, -íamos, -íais, -ían",
+    example: "Antes vivía en un pueblo.",
+  },
+  {
+    form: "Imperativo afirmativo",
+    build: "tú-Form als direkte Aufforderung",
+    endings: "regulär: habla, come, vive / unregelmäßig: di, haz, ve, pon, sal, sé, ten, ven",
+    example: "Haz los deberes.",
+  },
+];
+
 const vocabUnits = [
   {
     id: "u1",
@@ -353,6 +382,8 @@ const normalize = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const wordKey = (word) => `${word.unitId}:${word.es}`;
+
 function App() {
   const [active, setActive] = useState("home");
   const [theme, setTheme] = useState(() => localStorage.getItem("spanisch-theme") || "light");
@@ -360,9 +391,16 @@ function App() {
   const [query, setQuery] = useState("");
   const [cardIndex, setCardIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [learnQueue, setLearnQueue] = useState([]);
+  const [learnAnswer, setLearnAnswer] = useState("");
+  const [learnFeedback, setLearnFeedback] = useState(null);
+  const [missedKeys, setMissedKeys] = useState([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
+  const [writingTexts, setWritingTexts] = useState({});
+  const [writingReviews, setWritingReviews] = useState({});
+  const [reviewingPrompt, setReviewingPrompt] = useState(null);
   const [progress, setProgress] = useState(() => {
     const stored = localStorage.getItem("spanisch-progress");
     return stored ? JSON.parse(stored) : { correct: 0, attempts: 0, learned: [] };
@@ -390,7 +428,16 @@ function App() {
     });
   }, [allWords, query, unitId]);
 
+  useEffect(() => {
+    setLearnQueue(filteredWords.map(wordKey));
+    setLearnAnswer("");
+    setLearnFeedback(null);
+    setMissedKeys([]);
+  }, [filteredWords]);
+
   const activeCard = filteredWords[cardIndex % Math.max(filteredWords.length, 1)];
+  const learnWord = filteredWords.find((word) => wordKey(word) === learnQueue[0]);
+  const learnedThisRound = Math.max(filteredWords.length - learnQueue.length, 0);
   const score = progress.attempts ? Math.round((progress.correct / progress.attempts) * 100) : 0;
 
   function nextCard() {
@@ -405,9 +452,50 @@ function App() {
 
   function markKnown() {
     if (!activeCard) return;
-    const key = `${activeCard.unitId}:${activeCard.es}`;
+    const key = wordKey(activeCard);
     setProgress((old) => ({ ...old, learned: [...new Set([...old.learned, key])] }));
     nextCard();
+  }
+
+  function restartLearnMode() {
+    setLearnQueue(filteredWords.map(wordKey));
+    setLearnAnswer("");
+    setLearnFeedback(null);
+    setMissedKeys([]);
+  }
+
+  function moveCurrentToEnd(status) {
+    if (!learnWord) return;
+
+    const key = wordKey(learnWord);
+    setMissedKeys((old) => [...new Set([...old, key])]);
+    setLearnQueue((old) => (old.length > 1 ? [...old.slice(1), old[0]] : old));
+    setLearnAnswer("");
+    setLearnFeedback({
+      status,
+      text:
+        status === "skipped"
+          ? `Übersprungen. Die richtige Antwort wäre: ${learnWord.es}`
+          : `Noch nicht. Richtig wäre: ${learnWord.es}. Die Vokabel kommt am Schluss nochmal.`,
+    });
+  }
+
+  function submitLearnAnswer(event) {
+    event.preventDefault();
+    if (!learnWord) return;
+
+    const isCorrect = normalize(learnAnswer) === normalize(learnWord.es);
+    const key = wordKey(learnWord);
+
+    if (isCorrect) {
+      setLearnQueue((old) => old.slice(1));
+      setLearnAnswer("");
+      setLearnFeedback({ status: "correct", text: `Richtig: ${learnWord.es}` });
+      setProgress((old) => ({ ...old, learned: [...new Set([...old.learned, key])] }));
+      return;
+    }
+
+    moveCurrentToEnd("wrong");
   }
 
   function submitQuiz(answer) {
@@ -423,6 +511,52 @@ function App() {
     setFeedback(null);
     setQuizAnswer("");
     setQuizIndex((index) => (index + 1) % drills.length);
+  }
+
+  function updateWritingText(title, value) {
+    setWritingTexts((old) => ({ ...old, [title]: value }));
+  }
+
+  async function reviewWriting(prompt) {
+    const text = (writingTexts[prompt.title] || "").trim();
+
+    if (text.length < 20) {
+      setWritingReviews((old) => ({
+        ...old,
+        [prompt.title]: { type: "error", text: "Schreibe zuerst ein paar Sätze, damit die Korrektur sinnvoll ist." },
+      }));
+      return;
+    }
+
+    setReviewingPrompt(prompt.title);
+    setWritingReviews((old) => ({ ...old, [prompt.title]: null }));
+
+    try {
+      const response = await fetch("/api/correct-writing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: prompt.title,
+          task: prompt.task,
+          text,
+        }),
+      });
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await response.json() : {};
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Die Korrektur-API ist lokal nicht erreichbar. Starte die App mit Vercel Dev oder deploye sie mit GROQ_API_KEY."
+        );
+      }
+
+      setWritingReviews((old) => ({ ...old, [prompt.title]: { type: "success", text: data.feedback } }));
+    } catch (error) {
+      setWritingReviews((old) => ({ ...old, [prompt.title]: { type: "error", text: error.message } }));
+    } finally {
+      setReviewingPrompt(null);
+    }
   }
 
   const drill = drills[quizIndex % drills.length];
@@ -532,6 +666,34 @@ function App() {
               <h2>Grammatik kompakt</h2>
               <p>Regeln, Signalwörter, Beispiele und typische Formen.</p>
             </div>
+            <div className="formation-panel">
+              <div className="card-head">
+                <h3>Bildung der verschiedenen Formen</h3>
+                <span>Übersicht</span>
+              </div>
+              <div className="table-wrap">
+                <table className="formation-table">
+                  <thead>
+                    <tr>
+                      <th>Form</th>
+                      <th>Bildung</th>
+                      <th>Endungen / Merkhilfe</th>
+                      <th>Beispiel</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {formationOverview.map((row) => (
+                      <tr key={row.form}>
+                        <td><strong>{row.form}</strong></td>
+                        <td>{row.build}</td>
+                        <td>{row.endings}</td>
+                        <td>{row.example}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div className="grammar-grid">
               {grammarTopics.map((topic) => {
                 const details = grammarDetails[topic.id];
@@ -571,17 +733,19 @@ function App() {
                       <li key={example}>{example}</li>
                     ))}
                   </ul>
-                  <table>
-                    <tbody>
-                      {topic.table.map((row) => (
-                        <tr key={row.join("-")}>
-                          {row.map((cell) => (
-                            <td key={cell}>{cell}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="table-wrap">
+                    <table className="mini-table">
+                      <tbody>
+                        {topic.table.map((row) => (
+                          <tr key={row.join("-")}>
+                            {row.map((cell) => (
+                              <td key={cell}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </article>
                 );
               })}
@@ -624,6 +788,49 @@ function App() {
                 <button onClick={() => setFlipped((value) => !value)}><RotateCcw size={18} /> Umdrehen</button>
                 <button onClick={shuffleCard}><Shuffle size={18} /> Zufällig</button>
                 <button className="primary" onClick={markKnown}><CheckCircle2 size={18} /> Kann ich</button>
+              </div>
+              <div className="learn-mode">
+                <div className="card-head">
+                  <div>
+                    <h3>Quizlet-Modus</h3>
+                    <p>Tippe die spanische Vokabel. Falsche und geskippten Karten kommen am Schluss nochmal.</p>
+                  </div>
+                  <span>{learnQueue.length} offen</span>
+                </div>
+                <div className="learn-stats">
+                  <span>{learnedThisRound} geschafft</span>
+                  <span>{missedKeys.length} wiederholen</span>
+                  <span>{filteredWords.length} in dieser Runde</span>
+                </div>
+                {learnWord ? (
+                  <>
+                    <div className="learn-prompt">
+                      <small>{learnWord.unit}</small>
+                      <strong>{learnWord.de}</strong>
+                      <span>Deutsch → Español</span>
+                    </div>
+                    <form className="learn-form" onSubmit={submitLearnAnswer}>
+                      <input
+                        value={learnAnswer}
+                        onChange={(event) => setLearnAnswer(event.target.value)}
+                        placeholder="Spanische Vokabel eingeben..."
+                      />
+                      <button className="primary" type="submit"><CheckCircle2 size={18} /> Prüfen</button>
+                      <button type="button" onClick={() => moveCurrentToEnd("skipped")}><SkipForward size={18} /> Skippen</button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="learn-complete">
+                    <strong>Runde geschafft.</strong>
+                    <span>Alle sichtbaren Vokabeln sind durch.</span>
+                  </div>
+                )}
+                {learnFeedback && (
+                  <div className={`feedback ${learnFeedback.status === "correct" ? "correct" : "wrong"}`}>
+                    {learnFeedback.text}
+                  </div>
+                )}
+                <button type="button" onClick={restartLearnMode}><RotateCcw size={18} /> Runde neu starten</button>
               </div>
               <div className="word-list">
                 {filteredWords.slice(0, 80).map((word) => (
@@ -690,7 +897,28 @@ function App() {
                   <div className="chips">
                     {prompt.starters.map((starter) => <span key={starter}>{starter}</span>)}
                   </div>
-                  <textarea placeholder="Schreibe hier deinen Text..." rows={8} />
+                  <textarea
+                    placeholder="Schreibe hier deinen Text..."
+                    rows={8}
+                    value={writingTexts[prompt.title] || ""}
+                    onChange={(event) => updateWritingText(prompt.title, event.target.value)}
+                  />
+                  <div className="writing-actions">
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={() => reviewWriting(prompt)}
+                      disabled={reviewingPrompt === prompt.title}
+                    >
+                      {reviewingPrompt === prompt.title ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={18} />}
+                      {reviewingPrompt === prompt.title ? "Korrigiere..." : "Mit Groq korrigieren"}
+                    </button>
+                  </div>
+                  {writingReviews[prompt.title] && (
+                    <div className={`ai-review ${writingReviews[prompt.title].type}`}>
+                      {writingReviews[prompt.title].text}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
