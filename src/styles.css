@@ -352,12 +352,16 @@ form {
   gap: 0.65rem;
 }
 
-.grammar-grid,
 .writing-grid,
 .exam-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 1.35rem;
+}
+
+.grammar-list {
+  display: grid;
+  gap: 2.2rem;
 }
 
 .grammar-card,
@@ -372,12 +376,23 @@ form {
 
 .grammar-card {
   display: grid;
+  gap: 0.85rem;
+}
+
+.grammar-row {
+  display: grid;
   gap: 0.75rem;
+  padding: 0 0 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.grammar-row:last-child {
+  border-bottom: 0;
 }
 
 .formation-panel {
+  display: none;
   padding: 1rem;
-  display: grid;
   gap: 0.85rem;
 }
 
@@ -390,6 +405,11 @@ form {
 
 .card-head h3 {
   margin-bottom: 0;
+}
+
+.grammar-row .card-head small {
+  color: var(--muted);
+  font-weight: 850;
 }
 
 .card-head span,
@@ -447,6 +467,29 @@ form {
   margin-bottom: 0.25rem;
 }
 
+.grammar-use {
+  margin: 0;
+}
+
+.rule-line {
+  color: var(--note-text);
+  font-weight: 850;
+  line-height: 1.35;
+  padding: 0;
+}
+
+.grammar-notes {
+  display: grid;
+  gap: 0.18rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.grammar-notes p {
+  margin: 0;
+}
+
 .grammar-card ul {
   margin: 0;
   padding-left: 1.05rem;
@@ -460,7 +503,8 @@ form {
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 table {
@@ -472,10 +516,16 @@ table {
 th,
 td {
   border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   padding: 0.68rem 0.75rem;
   vertical-align: top;
   text-align: left;
   line-height: 1.35;
+}
+
+th:last-child,
+td:last-child {
+  border-right: 0;
 }
 
 th {
@@ -493,12 +543,30 @@ th {
 
 .mini-table {
   margin: 0;
+  table-layout: fixed;
+}
+
+.mini-table th,
+.mini-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.mini-table th {
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+  color: #263239;
+  font-size: 0.92rem;
 }
 
 .mini-table td:first-child {
   width: 36%;
   font-weight: 850;
   color: var(--text);
+}
+
+:root[data-theme="dark"] .mini-table th {
+  background: #243b47;
+  color: #edf3f0;
 }
 
 .searchbox {
@@ -543,15 +611,22 @@ textarea::placeholder {
 
 .trainer-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 410px) 1fr;
+  grid-template-columns: minmax(320px, 460px) 1fr;
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.learn-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 1fr) minmax(260px, 420px);
   gap: 0.9rem;
   align-items: start;
 }
 
 .flashcard {
-  min-height: 245px;
+  min-height: 300px;
   border-radius: 26px;
-  padding: 1.15rem;
+  padding: 1.35rem;
   background: var(--flashcard-bg);
   border: 1px solid var(--line);
   display: grid;
@@ -566,12 +641,75 @@ textarea::placeholder {
   overflow-wrap: anywhere;
 }
 
+.flashcard em {
+  color: var(--accent-strong);
+  font-style: normal;
+  font-weight: 850;
+}
+
 .flashcard.flipped {
   background: var(--flashcard-flipped-bg);
 }
 
 .trainer-actions {
   grid-column: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trainer-actions button:nth-child(2) {
+  order: 4;
+}
+
+.trainer-actions button:nth-child(5) {
+  order: 5;
+}
+
+.trainer-actions button {
+  width: 100%;
+}
+
+.trainer-actions .primary,
+.trainer-actions .skip-button {
+  grid-column: span 1;
+}
+
+.skip-button {
+  order: 2;
+  background: var(--accent-3);
+  color: #3d2a08;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-3) 72%, #000);
+}
+
+.trainer-actions .primary {
+  order: 3;
+}
+
+.skip-button:hover {
+  background: color-mix(in srgb, var(--accent-3) 82%, white);
+}
+
+.card-progress {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.card-progress span,
+.card-feedback {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 850;
+  padding: 0.35rem 0.65rem;
+}
+
+.card-feedback {
+  grid-column: 1;
+  border-radius: 14px;
 }
 
 .learn-mode {
@@ -693,6 +831,11 @@ textarea::placeholder {
   color: var(--success-text);
 }
 
+.word-list.compact {
+  grid-row: auto;
+  max-height: 520px;
+}
+
 .feedback.wrong {
   background: var(--error-bg);
   color: var(--error-text);
@@ -811,6 +954,7 @@ button:disabled {
   .exam-grid,
   .checklist,
   .trainer-layout,
+  .learn-layout,
   .word-list {
     grid-template-columns: 1fr;
   }

@@ -384,6 +384,16 @@ const normalize = (value) =>
 
 const wordKey = (word) => `${word.unitId}:${word.es}`;
 
+const grammarTableHeaders = {
+  perfecto: ["Endung", "Infinitiv", "Partizip"],
+  indefinido: ["Verb", "Perfecto simple"],
+  imperfecto: ["Verb", "Imperfecto"],
+  imperativo: ["Verb", "Imperativo"],
+  preps: ["Präposition", "Typische Verben"],
+  relativos: ["Pronomen", "Bedeutung"],
+  desde: ["Ausdruck", "Bedeutung"],
+};
+
 function App() {
   const [active, setActive] = useState("home");
   const [theme, setTheme] = useState(() => localStorage.getItem("spanisch-theme") || "light");
@@ -391,6 +401,9 @@ function App() {
   const [query, setQuery] = useState("");
   const [cardIndex, setCardIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [cardQueue, setCardQueue] = useState([]);
+  const [skippedCardKeys, setSkippedCardKeys] = useState([]);
+  const [cardFeedback, setCardFeedback] = useState(null);
   const [learnQueue, setLearnQueue] = useState([]);
   const [learnAnswer, setLearnAnswer] = useState("");
   const [learnFeedback, setLearnFeedback] = useState(null);
@@ -429,32 +442,61 @@ function App() {
   }, [allWords, query, unitId]);
 
   useEffect(() => {
+    setCardQueue(filteredWords.map(wordKey));
+    setSkippedCardKeys([]);
+    setCardFeedback(null);
+    setFlipped(false);
     setLearnQueue(filteredWords.map(wordKey));
     setLearnAnswer("");
     setLearnFeedback(null);
     setMissedKeys([]);
   }, [filteredWords]);
 
-  const activeCard = filteredWords[cardIndex % Math.max(filteredWords.length, 1)];
+  const activeCard = filteredWords.find((word) => wordKey(word) === cardQueue[0]);
+  const learnedCardsThisRound = Math.max(filteredWords.length - cardQueue.length, 0);
+  const cardRoundPosition = filteredWords.length ? Math.min(learnedCardsThisRound + 1, filteredWords.length) : 0;
   const learnWord = filteredWords.find((word) => wordKey(word) === learnQueue[0]);
   const learnedThisRound = Math.max(filteredWords.length - learnQueue.length, 0);
   const score = progress.attempts ? Math.round((progress.correct / progress.attempts) * 100) : 0;
 
   function nextCard() {
     setFlipped(false);
-    setCardIndex((index) => (index + 1) % Math.max(filteredWords.length, 1));
+    setCardQueue((old) => old.slice(1));
+    setCardFeedback(null);
   }
 
   function shuffleCard() {
     setFlipped(false);
-    setCardIndex(Math.floor(Math.random() * Math.max(filteredWords.length, 1)));
+    setCardFeedback(null);
+    setCardQueue((old) => {
+      if (old.length < 2) return old;
+      const randomIndex = Math.floor(Math.random() * old.length);
+      return [old[randomIndex], ...old.filter((_, index) => index !== randomIndex)];
+    });
   }
 
   function markKnown() {
     if (!activeCard) return;
     const key = wordKey(activeCard);
+    setSkippedCardKeys((old) => old.filter((item) => item !== key));
     setProgress((old) => ({ ...old, learned: [...new Set([...old.learned, key])] }));
     nextCard();
+  }
+
+  function skipCard() {
+    if (!activeCard) return;
+    const key = wordKey(activeCard);
+    setSkippedCardKeys((old) => [...new Set([...old, key])]);
+    setCardQueue((old) => (old.length > 1 ? [...old.slice(1), old[0]] : old));
+    setFlipped(false);
+    setCardFeedback(`${activeCard.es} kommt am Schluss nochmal.`);
+  }
+
+  function restartCards() {
+    setCardQueue(filteredWords.map(wordKey));
+    setSkippedCardKeys([]);
+    setCardFeedback(null);
+    setFlipped(false);
   }
 
   function restartLearnMode() {
@@ -575,7 +617,8 @@ function App() {
           {[
             ["home", Home, "Übersicht"],
             ["grammar", BookOpen, "Grammatik"],
-            ["vocab", GraduationCap, "Vokabeln"],
+            ["vocab", GraduationCap, "Lernkarten"],
+            ["learn", ListChecks, "Quizlet"],
             ["practice", Dumbbell, "Übungen"],
             ["writing", PencilLine, "Schreiben"],
             ["exam", Trophy, "Prüfungsmodus"],
@@ -628,6 +671,9 @@ function App() {
                 </button>
                 <button onClick={() => setActive("vocab")}>
                   <Shuffle size={18} /> Karteikarten
+                </button>
+                <button onClick={() => setActive("learn")}>
+                  <ListChecks size={18} /> Quizlet
                 </button>
               </div>
             </div>
@@ -694,47 +740,24 @@ function App() {
                 </table>
               </div>
             </div>
-            <div className="grammar-grid">
+            <div className="grammar-list">
               {grammarTopics.map((topic) => {
-                const details = grammarDetails[topic.id];
                 return (
-                <article className="grammar-card" key={topic.id}>
+                <article className="grammar-row" key={topic.id}>
                   <div className="card-head">
                     <h3>{topic.title}</h3>
-                    <span>{topic.badge}</span>
+                    <small>{topic.badge}</small>
                   </div>
-                  <p>{topic.use}</p>
-                  <strong>{topic.formula}</strong>
-                  <div className="chips">
-                    {topic.signals.map((signal) => (
-                      <span key={signal}>{signal}</span>
-                    ))}
-                  </div>
-                  {details?.signalGroups && (
-                    <div className="signal-box">
-                      <h4>Signalwörter</h4>
-                      {details.signalGroups.map(([label, text]) => (
-                        <p key={label}><strong>{label}:</strong> {text}</p>
-                      ))}
-                    </div>
-                  )}
-                  {details?.exceptions && (
-                    <div className="exception-box">
-                      <h4>Ausnahmen & Stolperstellen</h4>
-                      <ul>
-                        {details.exceptions.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <ul>
-                    {topic.examples.map((example) => (
-                      <li key={example}>{example}</li>
-                    ))}
-                  </ul>
-                  <div className="table-wrap">
+                  <p className="grammar-form">{topic.formula}</p>
+                  <div className="table-wrap grammar-table-wrap">
                     <table className="mini-table">
+                      <thead>
+                        <tr>
+                          {(grammarTableHeaders[topic.id] || ["Form", "Beispiel"]).map((header) => (
+                            <th key={header}>{header}</th>
+                          ))}
+                        </tr>
+                      </thead>
                       <tbody>
                         {topic.table.map((row) => (
                           <tr key={row.join("-")}>
@@ -746,6 +769,9 @@ function App() {
                       </tbody>
                     </table>
                   </div>
+                  <div className="grammar-notes">
+                    <p><strong>Beispiel:</strong> {topic.examples[0]}</p>
+                  </div>
                 </article>
                 );
               })}
@@ -756,8 +782,8 @@ function App() {
         {active === "vocab" && (
           <section>
             <div className="section-title">
-              <h2>Vokabeltrainer</h2>
-              <p>Suchen, filtern, Karteikarten drehen und als gelernt markieren.</p>
+              <h2>Lernkarten</h2>
+              <p>Karte drehen, überspringen und Geskipptes am Ende wiederholen.</p>
             </div>
             <div className="tool-row">
               <label className="searchbox">
@@ -776,20 +802,32 @@ function App() {
               <div className={`flashcard ${flipped ? "flipped" : ""}`} onClick={() => setFlipped((value) => !value)}>
                 {activeCard ? (
                   <>
-                    <small>{activeCard.unit}</small>
+                    <small>{activeCard.unit} · Karte {cardRoundPosition}/{filteredWords.length}</small>
                     <strong>{flipped ? activeCard.de : activeCard.es}</strong>
+                    {skippedCardKeys.includes(wordKey(activeCard)) && <em>Nochmal wegen Skip</em>}
                     <span>{flipped ? "Deutsch" : "Español"}</span>
                   </>
                 ) : (
-                  <strong>Keine Treffer</strong>
+                  <>
+                    <strong>{filteredWords.length ? "Runde geschafft" : "Keine Treffer"}</strong>
+                    <span>{filteredWords.length ? "Alle Karten sind durch." : "Ändere Suche oder Einheit."}</span>
+                  </>
                 )}
               </div>
-              <div className="trainer-actions">
-                <button onClick={() => setFlipped((value) => !value)}><RotateCcw size={18} /> Umdrehen</button>
-                <button onClick={shuffleCard}><Shuffle size={18} /> Zufällig</button>
-                <button className="primary" onClick={markKnown}><CheckCircle2 size={18} /> Kann ich</button>
+              <div className="card-progress">
+                <span>{learnedCardsThisRound} geschafft</span>
+                <span>{cardQueue.length} offen</span>
+                <span>{skippedCardKeys.length} geskippt</span>
               </div>
-              <div className="learn-mode">
+              <div className="trainer-actions">
+                <button onClick={() => setFlipped((value) => !value)} disabled={!activeCard}><RotateCcw size={18} /> Umdrehen</button>
+                <button onClick={shuffleCard}><Shuffle size={18} /> Zufällig</button>
+                <button className="skip-button" onClick={skipCard} disabled={!activeCard}><SkipForward size={18} /> Skippen</button>
+                <button className="primary" onClick={markKnown} disabled={!activeCard}><CheckCircle2 size={18} /> Kann ich</button>
+                <button onClick={restartCards}><RotateCcw size={18} /> Neu starten</button>
+              </div>
+              {cardFeedback && <div className="card-feedback">{cardFeedback}</div>}
+              {false && <div className="learn-mode">
                 <div className="card-head">
                   <div>
                     <h3>Quizlet-Modus</h3>
@@ -831,8 +869,82 @@ function App() {
                   </div>
                 )}
                 <button type="button" onClick={restartLearnMode}><RotateCcw size={18} /> Runde neu starten</button>
-              </div>
+              </div>}
               <div className="word-list">
+                {filteredWords.slice(0, 80).map((word) => (
+                  <div key={`${word.unitId}-${word.es}`}>
+                    <span>{word.es}</span>
+                    <small>{word.de}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {active === "learn" && (
+          <section>
+            <div className="section-title">
+              <h2>Quizlet-Modus</h2>
+              <p>Deutsch sehen, Spanisch tippen, Fehler am Schluss wiederholen.</p>
+            </div>
+            <div className="tool-row">
+              <label className="searchbox">
+                <Search size={18} />
+                <input value={query} onChange={(e) => { setQuery(e.target.value); setCardIndex(0); }} placeholder="Vokabel suchen..." />
+              </label>
+              <select value={unitId} onChange={(e) => { setUnitId(e.target.value); setCardIndex(0); }}>
+                <option value="all">Alle Einheiten</option>
+                {vocabUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>{unit.title} - {unit.subtitle}</option>
+                ))}
+              </select>
+            </div>
+            <div className="learn-layout">
+              <div className="learn-mode">
+                <div className="card-head">
+                  <div>
+                    <h3>Schreiben</h3>
+                    <p>{filteredWords.length} Karten in dieser Auswahl</p>
+                  </div>
+                  <span>{learnQueue.length} offen</span>
+                </div>
+                <div className="learn-stats">
+                  <span>{learnedThisRound} geschafft</span>
+                  <span>{missedKeys.length} wiederholen</span>
+                  <span>{filteredWords.length} gesamt</span>
+                </div>
+                {learnWord ? (
+                  <>
+                    <div className="learn-prompt">
+                      <small>{learnWord.unit}</small>
+                      <strong>{learnWord.de}</strong>
+                      <span>Deutsch -&gt; Español</span>
+                    </div>
+                    <form className="learn-form" onSubmit={submitLearnAnswer}>
+                      <input
+                        value={learnAnswer}
+                        onChange={(event) => setLearnAnswer(event.target.value)}
+                        placeholder="Spanische Vokabel eingeben..."
+                      />
+                      <button className="primary" type="submit"><CheckCircle2 size={18} /> Prüfen</button>
+                      <button type="button" onClick={() => moveCurrentToEnd("skipped")}><SkipForward size={18} /> Skippen</button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="learn-complete">
+                    <strong>Runde geschafft.</strong>
+                    <span>Alle sichtbaren Vokabeln sind durch.</span>
+                  </div>
+                )}
+                {learnFeedback && (
+                  <div className={`feedback ${learnFeedback.status === "correct" ? "correct" : "wrong"}`}>
+                    {learnFeedback.text}
+                  </div>
+                )}
+                <button type="button" onClick={restartLearnMode}><RotateCcw size={18} /> Runde neu starten</button>
+              </div>
+              <div className="word-list compact">
                 {filteredWords.slice(0, 80).map((word) => (
                   <div key={`${word.unitId}-${word.es}`}>
                     <span>{word.es}</span>
